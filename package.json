@@ -1,0 +1,23 @@
+{
+  "name": "minimal-templating-lang",
+  "version": "1.0.0",
+  "description": "minimal templating language",
+  "main": "index.js",
+  "dependencies": {
+    "arcsecond": "^2.0.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EmNudge/Minimal-Templating-Lang.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/EmNudge/Minimal-Templating-Lang/issues"
+  },
+  "homepage": "https://github.com/EmNudge/Minimal-Templating-Lang#readme"
+}

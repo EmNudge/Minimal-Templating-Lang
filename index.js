@@ -1,5 +1,6 @@
 const fs = require("fs");
 const path = require("path");
+const { withTags } = require('./combinators/index')
 
 // getting all partial html files to store in a Map
 const partialsDIR = path.join(process.cwd(), "/src/partials/");
@@ -15,6 +16,17 @@ const partials = new Map(fs.readdirSync(partialsDIR).map(file => {
         contents,
     ]
 }));
+
+function pageWithSelfClosingPartials(contents) {
+    const pageArr = withTags.run(contents).result;
+    const newContents = pageArr.map(data => {
+        if (typeof data === "string") return data;
+        if (!partials.has(data.name)) return `<NO TAG OF NAME ${data.name} />`;
+        return partials.get(data.name);
+    }).join('');
+
+    debugger;
+}
 
 // replaces <TAGNAME/> with matching partial name from src/partials
 function getPageWithPartials(contents) {
@@ -75,6 +87,9 @@ if (!fs.existsSync(outputDIR)) fs.mkdirSync(outputDIR);
 for (const page of fs.readdirSync(pagesDIR)) {
     const fullPath = path.join(pagesDIR, page);
     const contents = fs.readFileSync(fullPath, "utf-8");
+
+    pageWithSelfClosingPartials(contents);
+    
 
     const pagePath = outputDIR + page;
 
