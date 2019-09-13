@@ -3,8 +3,10 @@ const {
   sequenceOf,
   optionalWhitespace,
   letters,
+  str,
+  possibly,
 } = require("arcsecond");
-const { parserAndContent } = require('./utils');
+const { sepBySeparator } = require('./utils')
 
 const opener = sequenceOf([
   str('{{'),
@@ -15,6 +17,13 @@ const closer = sequenceOf([
   str('}}'),
 ]);
 
-const variableParser = between(opener)(closer)(letters);
+// make it into an object to distinguish from regular captures.
+const variableParser = sequenceOf([
+  opener,
+  possibly(letters),
+  closer,
+]).map(x => ({ name: x[1] ? x[1] : 'children' }));
+
+const partialParser = sepBySeparator(variableParser)
 
 module.exports = { partialParser }

@@ -1,33 +1,30 @@
 const {
   everythingUntil,
-  sequenceOf,
-  many,
+  char,
   endOfInput,
   coroutine,
+  lookAhead,
+  either,
 } = require("arcsecond");
 
+// like sepBy, but it also returns the separator and the value parser is everything.
 const sepBySeparator = parser => coroutine(function*() {
   const results = [];
 
+  let restOfInput;
+
   while(true) {
-    const text = yield everythingUntil(parser);
-    if (text.isError) break;
-    results.push(text);
+    restOfInput = yield lookAhead(everythingUntil(endOfInput));
+
+    // must use either() so parser doesn't terminate
+    const nextInstance = yield either(lookAhead(everythingUntil(parser)));
+    if (nextInstance.isError) break;
+
+    results.push(yield everythingUntil(parser));
     results.push(yield parser);
   }
-
-  return [...results, yield everythingUntil(endOfInput)]
+  
+  return restOfInput ? [...results, restOfInput] : results;
 })
 
-// returns everything and instances of the parser. Like sepBy, but it returns the parser.
-const contentRepeater = many(sequenceOf([
-  everythingUntil(parser),
-  parser,
-])).map(x => x.flat());
-
-const parserAndContent = parser => sequenceOf([
-  contentRepeater,
-  everythingUntil(endOfInput)
-]).map(x => x.flat());
-
-module.exports = { parserAndContent, sepBySeparator }
+module.exports = { sepBySeparator }

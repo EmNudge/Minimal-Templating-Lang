@@ -1,6 +1,10 @@
 const fs = require("fs");
 const path = require("path");
-const { withTags } = require('./combinators/index')
+const { withSelfClosingTags } = require('./combinators/index')
+const { partialParser } = require('./combinators/partials')
+
+const test = require('./combinators/test');
+test();
 
 // getting all partial html files to store in a Map
 const partialsDIR = path.join(process.cwd(), "/src/partials/");
@@ -8,35 +12,33 @@ const partialsDIR = path.join(process.cwd(), "/src/partials/");
 const partials = new Map(fs.readdirSync(partialsDIR).map(file => {
     const fullPath = path.join(partialsDIR, file);
     const contents = fs.readFileSync(fullPath, "utf-8");
-    const name = file.split('.')[0].toUpperCase();
+    const partialParsed = partialParser.run(contents).result;
 
+    const name = file.split('.')[0].toUpperCase();
     // returning an array since Map will interpret this as [key, value]
     return [
         name,
-        contents,
+        partialParsed,
     ]
 }));
 
 function pageWithSelfClosingPartials(contents) {
-    const pageArr = withTags.run(contents).result;
-    const newContents = pageArr.map(data => {
+    const pageArr = withSelfClosingTags.run(contents).result;
+    return pageArr.map(data => {
         if (typeof data === "string") return data;
         if (!partials.has(data.name)) return `<NO TAG OF NAME ${data.name} />`;
-        return partials.get(data.name);
+
+        const partial = partials.get(data.name);
+
+        return partial.map(data1 => {
+            if (typeof data1 === "string") return data1;
+
+            const filler = data.props.find(prop => prop.name === data1.name);
+            if (!filler) return `{{ NO PROP OF NAME ${data1.name} }}`;
+
+            return filler.value;
+        }).join('');
     }).join('');
-
-    debugger;
-}
-
-// replaces <TAGNAME/> with matching partial name from src/partials
-function getPageWithPartials(contents) {
-    const matchSCPartial = /<\s*[A-Z]+?\s*\/>/g;
-
-    return contents.replace(matchSCPartial, tag => {
-        const name = tag.match(/([A-Z])\w+/)[0];
-
-        return partials.has(name) ? partials.get(name) : tag;
-    });
 }
 
 // gets the index and matched string from a regex
@@ -93,7 +95,7 @@ for (const page of fs.readdirSync(pagesDIR)) {
 
     const pagePath = outputDIR + page;
 
-    let pageWithPartials = getPageWithPartials(contents);
+    let pageWithPartials = pageWithSelfClosingPartials(contents);
 
     // keep getting partials from the page until there are none left (where the page remains unchanged)
     for (;;) {
